@@ -297,6 +297,12 @@ function generateCampaignSummary() {
         summary += "<strong>Send By Date:</strong> " + sendByDate + "<br>";
     }
     
+    // Add rate limit if specified
+    var rateLimit = $("#rate_limit").val();
+    if (rateLimit && rateLimit !== "" && campaignType === "email") {
+        summary += "<strong>Max Emails Per Minute:</strong> " + rateLimit + "<br>";
+    }
+    
     // Add HTTP Basic Auth if enabled
     if ($('#basicauth').is(":checked")) {
         summary += "<strong>HTTP Basic Auth:</strong> Enabled<br>";
@@ -384,6 +390,7 @@ function launch() {
                     campaign.smtp = {
                         name: $("#profile").select2("data")[0].text
                     };
+                    campaign.emails_per_minute = parseInt($("#rate_limit").val()) || 0;
                 } else if (campaignType === "sms") {
                     campaign.sms_template = {
                         name: $("#sms_template").select2("data")[0].text
@@ -517,6 +524,7 @@ function dismiss() {
     $("#sms_profile_div").hide();
     $("#groups_div").show();
     $("#generic_info_div").hide();
+    $("#rate_limit_div").show();
     
     $("#template").val("").change();
     $("#sms_template").val("").change();
@@ -526,6 +534,7 @@ function dismiss() {
     $("#profile").val("").change();
     $("#sms_profile").val("").change();
     $("#users").val("").change();
+    $("#rate_limit").val("");
     $("#modal").modal('hide');
 }
 
@@ -764,6 +773,7 @@ function copy(idx) {
                 $("#sms_profile_div").show();
                 $("#groups_div").show();
                 $("#generic_info_div").hide();
+                $("#rate_limit_div").hide();
                 
                 // Populate SMS-specific fields
                 if (campaign.sms_template && campaign.sms_template.id) {
@@ -793,6 +803,7 @@ function copy(idx) {
                 $("#sms_profile_div").hide();
                 $("#groups_div").hide();
                 $("#generic_info_div").show();
+                $("#rate_limit_div").hide();
             } else {
                 // Email campaign (default) - show email fields, hide SMS fields
                 $("#email_template_div").show();
@@ -801,6 +812,7 @@ function copy(idx) {
                 $("#sms_profile_div").hide();
                 $("#groups_div").show();
                 $("#generic_info_div").hide();
+                $("#rate_limit_div").show();
                 
                 // Populate email-specific fields
                 if (campaign.template && campaign.template.id) {
@@ -851,6 +863,7 @@ function copy(idx) {
                 $("#basicauth").prop("checked", false);
             }
             $("#randomize_send_order").prop("checked", !!campaign.randomize_send_order);
+            $("#rate_limit").val(campaign.emails_per_minute || "");
 
             // Update URL length indicator
             updateURLLengthIndicator();
@@ -1163,6 +1176,7 @@ $(document).ready(function () {
             $("#sms_profile_div").hide();
             $("#groups_div").show();
             $("#generic_info_div").hide();
+            $("#rate_limit_div").show();
             // Clear any previous error messages
             $("#modal\\.flashes").empty();
         } else if (type === "sms") {
@@ -1172,6 +1186,7 @@ $(document).ready(function () {
             $("#sms_profile_div").show();
             $("#groups_div").show();
             $("#generic_info_div").hide();
+            $("#rate_limit_div").hide();
             
             // Clear any previous error messages
             $("#modal\\.flashes").empty();
@@ -1199,6 +1214,7 @@ $(document).ready(function () {
             $("#sms_profile_div").hide();
             $("#groups_div").hide();
             $("#generic_info_div").show();
+            $("#rate_limit_div").hide();
             
             // Clear any previous error messages
             $("#modal\\.flashes").empty();

@@ -165,8 +165,14 @@
                             <input type="text" class="form-control" id="send_by_date" autocomplete="random-data"/> <!--Chrome ignores autocomplete="off".-->
                         </div>
                     </div>
-                    
-                    <!-- Email Sending Profile (shown for email campaigns) -->
+                    <div class="form-group" id="rate_limit_div" style="margin-top: 10px;">
+                        <label class="control-label" for="rate_limit">Max Emails Per Minute (Optional):
+                            <i class="fa fa-question-circle" data-toggle="tooltip" data-placement="right" title="If specified, Gophish will send at most this many emails per minute, starting from the campaign launch."></i>
+                        </label>
+                        <input type="number" class="form-control" id="rate_limit" min="1" placeholder="e.g. 50" />
+                    </div>
+                     
+                     <!-- Email Sending Profile (shown for email campaigns) -->
                     <div id="email_profile_div">
                         <label class="control-label" for="profile">Email Sending Profile:</label>
                         <div class="input-group">

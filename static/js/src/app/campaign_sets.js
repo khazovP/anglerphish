@@ -556,6 +556,7 @@ $(document).ready(function () {
         // Set launch date to current day
         $("#launch_date").val(moment().format("MMMM Do YYYY, h:mm a"));
         $("#send_by_date").val("");
+        $("#rate_limit").val("");
         $("#campaignList").html("");
         $("#campaignDetail").html("");
         $(".campaign-detail-placeholder").show();
@@ -677,11 +678,13 @@ $(document).ready(function () {
             campaignForm.find(".sms-template-group").hide();
             campaignForm.find(".email-profile-group").show();
             campaignForm.find(".sms-profile-group").hide();
+            campaignForm.find(".email-rate-limit-group").show();
         } else if (type === "sms") {
             campaignForm.find(".email-template-group").hide();
             campaignForm.find(".sms-template-group").show();
             campaignForm.find(".email-profile-group").hide();
             campaignForm.find(".sms-profile-group").show();
+            campaignForm.find(".email-rate-limit-group").hide();
         }
     });
 
@@ -1362,6 +1365,12 @@ function addCampaignEntry(index) {
                     </label>
                     <input type="text" class="form-control campaign-send-by-date" id="campaign_send_by_date_${index}" />
                 </div>
+                <div class="form-group email-rate-limit-group" id="rate_limit_div_${index}">
+                    <label class="control-label" for="rate_limit_${index}">Max Emails Per Minute (Optional):
+                        <i class="fa fa-question-circle" data-toggle="tooltip" data-placement="right" title="If specified, Gophish will send at most this many emails per minute, starting from the campaign launch."></i>
+                    </label>
+                    <input type="number" class="form-control campaign-rate-limit" id="rate_limit_${index}" min="1" placeholder="e.g. 50" />
+                </div>
             </div>
         </div>
     `;
@@ -1882,6 +1891,13 @@ function launchCampaignSet() {
                 const campaignSendByDate = $(this).find(".campaign-send-by-date").val();
                 campaign.launch_date = campaignLaunchDate ? moment(campaignLaunchDate, "MMMM Do YYYY, h:mm a").utc().format() : "";
                 campaign.send_by_date = campaignSendByDate ? moment(campaignSendByDate, "MMMM Do YYYY, h:mm a").utc().format() : null;
+                
+                // Handle rate limit (only for email campaigns)
+                const rateLimit = $(this).find(".campaign-rate-limit").val();
+                const campaignType = $(this).find(".campaign-type").val();
+                if (campaignType === "email" && rateLimit) {
+                    campaign.emails_per_minute = parseInt(rateLimit, 10);
+                }
             }
         }
 
@@ -2105,6 +2121,13 @@ function saveDraftCampaignSet() {
             const campaignSendByDate = $(this).find(".campaign-send-by-date").val();
             campaign.launch_date = campaignLaunchDate ? moment(campaignLaunchDate, "MMMM Do YYYY, h:mm a").utc().format() : null;
             campaign.send_by_date = campaignSendByDate ? moment(campaignSendByDate, "MMMM Do YYYY, h:mm a").utc().format() : null;
+            
+            // Handle rate limit for email campaigns
+            const campaignTypeEl = $(this).find(".campaign-type").val();
+            const rateLimit = $(this).find(".campaign-rate-limit").val();
+            if (campaignTypeEl === "email" && rateLimit) {
+                campaign.emails_per_minute = parseInt(rateLimit, 10);
+            }
         } else {
             // Use shared page settings
             const pageSelect = $("#page");
@@ -2424,6 +2447,7 @@ function editDraftCampaignSet(id) {
                                 $(`#campaign_urlparam_${i}`).val(campaign.urlparam || "");
                                 $(`#campaign_qrsize_${i}`).val(campaign.qrsize || "");
                                 $(`#campaign_basicauth_${i}`).prop("checked", campaign.basicauth || false);
+                                $(`#rate_limit_${i}`).val(campaign.emails_per_minute || "");
                                     // Handle dates - only show if they are actually set
                                     if (campaign.launch_date && campaign.launch_date !== "0001-01-01T00:00:00Z") {
                                         $(`#campaign_launch_date_${i}`).val(moment(campaign.launch_date).format("MMMM Do YYYY, h:mm a"));
@@ -2651,6 +2675,13 @@ function updateDraftCampaignSet(id) {
             const campaignSendByDate = $(this).find(".campaign-send-by-date").val();
             campaign.launch_date = campaignLaunchDate ? moment(campaignLaunchDate, "MMMM Do YYYY, h:mm a").utc().format() : null;
             campaign.send_by_date = campaignSendByDate ? moment(campaignSendByDate, "MMMM Do YYYY, h:mm a").utc().format() : null;
+            
+            // Handle rate limit for email campaigns
+            const campaignTypeEl = $(this).find(".campaign-type").val();
+            const rateLimit = $(this).find(".campaign-rate-limit").val();
+            if (campaignTypeEl === "email" && rateLimit) {
+                campaign.emails_per_minute = parseInt(rateLimit, 10);
+            }
         } else {
             // Use shared page settings
             const pageSelect = $("#page");
@@ -3559,6 +3590,7 @@ function copyCampaignSet(id) {
                                 $(`#campaign_urlparam_${i}`).val(campaign.urlparam || "");
                                 $(`#campaign_qrsize_${i}`).val(campaign.qrsize || "");
                                 $(`#campaign_basicauth_${i}`).prop("checked", campaign.basicauth || false);
+                                $(`#rate_limit_${i}`).val(campaign.emails_per_minute || "");
                                 
                                 // Reset dates to empty for copy
                                 $(`#campaign_launch_date_${i}`).val("");
@@ -3735,6 +3767,7 @@ function copyDraftCampaignSet(id) {
                                 $(`#campaign_urlparam_${i}`).val(campaign.urlparam || "");
                                 $(`#campaign_qrsize_${i}`).val(campaign.qrsize || "");
                                 $(`#campaign_basicauth_${i}`).prop("checked", campaign.basicauth || false);
+                                $(`#rate_limit_${i}`).val(campaign.emails_per_minute || "");
                                 
                                 // Reset dates to empty for copy
                                 $(`#campaign_launch_date_${i}`).val("");

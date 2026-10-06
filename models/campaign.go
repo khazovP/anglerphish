@@ -43,6 +43,7 @@ type Campaign struct {
 	HTTPAuth           bool        `json:"basicauth" sql:"column:http_auth"`
 	CampaignSetId      int64       `json:"campaign_set_id,omitempty"`
 	RandomizeSendOrder bool        `json:"randomize_send_order" sql:"default:false"`
+	EmailsPerMinute    int64       `json:"emails_per_minute" sql:"default:0"`
 }
 
 // CampaignResults is a struct representing the results from a campaign
@@ -65,15 +66,16 @@ type CampaignSummaries struct {
 
 // CampaignSummary is a struct representing the overview of a single camaign
 type CampaignSummary struct {
-	Id            int64         `json:"id"`
-	CreatedDate   time.Time     `json:"created_date"`
-	LaunchDate    time.Time     `json:"launch_date"`
-	SendByDate    time.Time     `json:"send_by_date"`
-	CompletedDate time.Time     `json:"completed_date"`
-	Status        string        `json:"status"`
-	Name          string        `json:"name"`
-	Type          string        `json:"type"`
-	Stats         CampaignStats `json:"stats"`
+	Id              int64         `json:"id"`
+	CreatedDate     time.Time     `json:"created_date"`
+	LaunchDate      time.Time     `json:"launch_date"`
+	SendByDate      time.Time     `json:"send_by_date"`
+	CompletedDate   time.Time     `json:"completed_date"`
+	Status          string        `json:"status"`
+	Name            string        `json:"name"`
+	Type            string        `json:"type"`
+	Stats           CampaignStats `json:"stats"`
+	EmailsPerMinute int64         `json:"emails_per_minute"`
 }
 
 // CampaignStats is a struct representing the statistics for a single campaign
@@ -194,6 +196,9 @@ var ErrSMSNotFound = errors.New("SMS sending profile not found")
 // launch date
 var ErrInvalidSendByDate = errors.New("The launch date must be before the \"send emails by\" date")
 
+// ErrInvalidRateLimit indicates that the user specified an invalid rate limit
+var ErrInvalidRateLimit = errors.New("Emails per minute must be a positive number")
+
 // RecipientParameter is the URL parameter that points to the result ID for a recipient.
 var RecipientParameter = "rid"
 
@@ -214,6 +219,8 @@ func (c *Campaign) Validate() error {
 		return ErrCampaignNameNotSpecified
 	case !c.SendByDate.IsZero() && !c.LaunchDate.IsZero() && c.SendByDate.Before(c.LaunchDate):
 		return ErrInvalidSendByDate
+	case c.EmailsPerMinute < 0:
+		return ErrInvalidRateLimit
 	}
 
 	// Type-specific validation
@@ -464,6 +471,11 @@ func (c *Campaign) getQRSize() string {
 
 // generateSendDate creates a sendDate
 func (c *Campaign) generateSendDate(idx int, totalRecipients int) time.Time {
+	// Apply rate limiting for email campaigns only.
+	// If a rate limit is set, space emails out at that rate starting from launch.
+	if c.Type != "sms" && c.EmailsPerMinute > 0 {
+		return c.LaunchDate.Add(time.Duration(int64(idx)/c.EmailsPerMinute) * time.Minute)
+	}
 	// If no send date is specified, just return the launch date
 	if c.SendByDate.IsZero() || c.SendByDate.Equal(c.LaunchDate) {
 		return c.LaunchDate
@@ -658,7 +670,7 @@ func GetCampaignSummaries(uid int64) (CampaignSummaries, error) {
 	cs := []CampaignSummary{}
 	// Get the basic campaign information
 	query := db.Table("campaigns").Where("user_id = ?", uid)
-	query = query.Select("id, name, created_date, launch_date, send_by_date, completed_date, status, type")
+	query = query.Select("id, name, created_date, launch_date, send_by_date, completed_date, status, type, emails_per_minute")
 	err := query.Scan(&cs).Error
 	if err != nil {
 		log.Error(err)
@@ -681,7 +693,7 @@ func GetCampaignSummaries(uid int64) (CampaignSummaries, error) {
 func GetCampaignSummary(id int64, uid int64) (CampaignSummary, error) {
 	cs := CampaignSummary{}
 	query := db.Table("campaigns").Where("user_id = ? AND id = ?", uid, id)
-	query = query.Select("id, name, created_date, launch_date, send_by_date, completed_date, status, type")
+	query = query.Select("id, name, created_date, launch_date, send_by_date, completed_date, status, type, emails_per_minute")
 	err := query.Scan(&cs).Error
 	if err != nil {
 		log.Error(err)
