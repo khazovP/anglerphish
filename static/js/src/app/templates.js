@@ -187,6 +187,7 @@ function renderEmailPreview(template) {
         // DateTime fields (dynamic)
         CurrentDateTime: now.toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true}),
         CurrentDate: now.toLocaleString('en-US', {month: 'long', day: 'numeric', year: 'numeric'}),
+        CurrentDateShort: String(now.getDate()).padStart(2, '0') + '.' + String(now.getMonth() + 1).padStart(2, '0') + '.' + now.getFullYear(),
         CurrentTime: now.toLocaleString('en-US', {hour: 'numeric', minute: '2-digit', hour12: true}),
         CurrentTime24: now.toLocaleString('en-GB', {hour: '2-digit', minute: '2-digit', hour12: false})
     };
@@ -196,6 +197,7 @@ function renderEmailPreview(template) {
         var regex = new RegExp('{{\\.' + key + '}}', 'g');
         html = html.replace(regex, sampleData[key]);
     }
+    html = resolveCurrentDateShortOffsets(html);
     
     // Apply security sanitization - remove scripts and event handlers
     html = sanitizeHTML(html);
@@ -627,6 +629,7 @@ function previewEmailTemplate(idx) {
         BaseURL: "https://example.com",
         CurrentDateTime: now.toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true}),
         CurrentDate: now.toLocaleString('en-US', {month: 'long', day: 'numeric', year: 'numeric'}),
+        CurrentDateShort: String(now.getDate()).padStart(2, '0') + '.' + String(now.getMonth() + 1).padStart(2, '0') + '.' + now.getFullYear(),
         CurrentTime: now.toLocaleString('en-US', {hour: 'numeric', minute: '2-digit', hour12: true}),
         CurrentTime24: now.toLocaleString('en-GB', {hour: '2-digit', minute: '2-digit', hour12: false})
     };
@@ -637,6 +640,7 @@ function previewEmailTemplate(idx) {
         var regex = new RegExp('{{\\.' + key + '}}', 'g');
         subject = subject.replace(regex, sampleData[key]);
     }
+    subject = resolveCurrentDateShortOffsets(subject);
     $('#preview_email_subject').text(subject);
     
     // Display attachments if any

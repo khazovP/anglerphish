@@ -5,6 +5,8 @@ import (
 	"net/mail"
 	"net/url"
 	"path"
+	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -21,22 +23,23 @@ type TemplateContext interface {
 // PhishingTemplateContext is the context that is sent to any template, such
 // as the email or landing page content.
 type PhishingTemplateContext struct {
-	From            string
-	URL             string
-	Tracker         string
-	TrackingURL     string
-	RId             string
-	BaseURL         string
-	QRBase64        string
-	QRName          string
-	QR              string
-	QRSize          string // QR code size in pixels
-	QRImageData     []byte // Raw PNG data for Office document embedding
-	QRFallbackText  string // URL text for fallbacks in Office documents
-	CurrentDateTime string // Current date and time - e.g. "Nov 23, 2025 7:39 PM"
-	CurrentDate     string // Current date only - e.g. "November 23, 2025"
-	CurrentTime     string // Current time (12-hour) - e.g. "7:39 PM"
-	CurrentTime24   string // Current time (24-hour) - e.g. "19:39"
+	From             string
+	URL              string
+	Tracker          string
+	TrackingURL      string
+	RId              string
+	BaseURL          string
+	QRBase64         string
+	QRName           string
+	QR               string
+	QRSize           string // QR code size in pixels
+	QRImageData      []byte // Raw PNG data for Office document embedding
+	QRFallbackText   string // URL text for fallbacks in Office documents
+	CurrentDateTime  string // Current date and time - e.g. "Nov 23, 2025 7:39 PM"
+	CurrentDate      string // Current date only - e.g. "November 23, 2025"
+	CurrentDateShort string // Current date only (DD.MM.YYYY) - e.g. "23.11.2025"
+	CurrentTime      string // Current time (12-hour) - e.g. "7:39 PM"
+	CurrentTime24    string // Current time (24-hour) - e.g. "19:39"
 	BaseRecipient
 }
 
@@ -106,31 +109,56 @@ func NewPhishingTemplateContext(ctx TemplateContext, r BaseRecipient, rid string
 	now := time.Now()
 
 	return PhishingTemplateContext{
-		BaseRecipient:   r,
-		BaseURL:         baseURL.String(),
-		URL:             phishURL.String(),
-		TrackingURL:     trackingURL.String(),
-		Tracker:         "<img alt='' style='display: none' src='" + trackingURL.String() + "'/>",
-		From:            fn,
-		RId:             rid,
-		QRBase64:        qrBase64,
-		QRName:          qrName,
-		QR:              qr,
-		QRSize:          qrSize,
-		QRImageData:     qrImageData,
-		QRFallbackText:  qrFallbackText,
-		CurrentDateTime: now.Format("Jan 2, 2006 3:04 PM"),
-		CurrentDate:     now.Format("January 2, 2006"),
-		CurrentTime:     now.Format("3:04 PM"),
-		CurrentTime24:   now.Format("15:04"),
+		BaseRecipient:    r,
+		BaseURL:          baseURL.String(),
+		URL:              phishURL.String(),
+		TrackingURL:      trackingURL.String(),
+		Tracker:          "<img alt='' style='display: none' src='" + trackingURL.String() + "'/>",
+		From:             fn,
+		RId:              rid,
+		QRBase64:         qrBase64,
+		QRName:           qrName,
+		QR:               qr,
+		QRSize:           qrSize,
+		QRImageData:      qrImageData,
+		QRFallbackText:   qrFallbackText,
+		CurrentDateTime:  now.Format("Jan 2, 2006 3:04 PM"),
+		CurrentDate:      now.Format("January 2, 2006"),
+		CurrentDateShort: now.Format("02.01.2006"),
+		CurrentTime:      now.Format("3:04 PM"),
+		CurrentTime24:    now.Format("15:04"),
 	}, nil
+}
+
+// dateOffsetPattern matches placeholders such as {{.CurrentDateShort+7}} or
+// {{.CurrentDateShort - 3}}. Go's text/template can't express arithmetic in a
+// field path, so these are resolved to literal dates before parsing.
+var dateOffsetPattern = regexp.MustCompile(`\{\{\s*\.CurrentDateShort\s*([+-])\s*(\d+)\s*\}\}`)
+
+// resolveCurrentDateShortOffsets expands {{.CurrentDateShort±N}} placeholders
+// into the current date in DD.MM.YYYY format, offset by N days.
+func resolveCurrentDateShortOffsets(text string) string {
+	if !strings.Contains(text, ".CurrentDateShort") {
+		return text
+	}
+	return dateOffsetPattern.ReplaceAllStringFunc(text, func(match string) string {
+		parts := dateOffsetPattern.FindStringSubmatch(match)
+		days, err := strconv.Atoi(parts[2])
+		if err != nil {
+			return match
+		}
+		if parts[1] == "-" {
+			days = -days
+		}
+		return time.Now().AddDate(0, 0, days).Format("02.01.2006")
+	})
 }
 
 // ExecuteTemplate creates a templated string based on the provided
 // template body and data.
 func ExecuteTemplate(text string, data interface{}) (string, error) {
 	buff := bytes.Buffer{}
-	tmpl, err := template.New("template").Parse(text)
+	tmpl, err := template.New("template").Parse(resolveCurrentDateShortOffsets(text))
 	if err != nil {
 		return buff.String(), err
 	}
@@ -144,7 +172,7 @@ func ExecuteTemplate(text string, data interface{}) (string, error) {
 // This function tackles the issue by replacing & with &amp;
 func ExecuteAttachmentsTemplate(text string, data PhishingTemplateContext) (string, error) {
 	buff := bytes.Buffer{}
-	tmpl, err := template.New("template").Parse(text)
+	tmpl, err := template.New("template").Parse(resolveCurrentDateShortOffsets(text))
 	if err != nil {
 		return buff.String(), err
 	}

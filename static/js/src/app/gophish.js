@@ -58,6 +58,17 @@ function unescapeHtml(html) {
     return $("<div/>").html(html).text()
 }
 
+// Resolve {{.CurrentDateShort±N}} placeholders in template previews, mirroring
+// the server-side handling in models/template_context.go.
+function resolveCurrentDateShortOffsets(str) {
+    return str.replace(/{{\s*\.CurrentDateShort\s*([+-])\s*(\d+)\s*}}/g, function (match, sign, days) {
+        var d = new Date();
+        d.setDate(d.getDate() + (sign === '-' ? -1 : 1) * parseInt(days, 10));
+        return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear();
+    });
+}
+window.resolveCurrentDateShortOffsets = resolveCurrentDateShortOffsets
+
 /**
  * 
  * @param {string} string - The input string to capitalize

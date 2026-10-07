@@ -259,6 +259,7 @@ function previewSMSTemplate(idx) {
         // DateTime fields (dynamic)
         CurrentDateTime: now.toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true}),
         CurrentDate: now.toLocaleString('en-US', {month: 'long', day: 'numeric', year: 'numeric'}),
+        CurrentDateShort: String(now.getDate()).padStart(2, '0') + '.' + String(now.getMonth() + 1).padStart(2, '0') + '.' + now.getFullYear(),
         CurrentTime: now.toLocaleString('en-US', {hour: 'numeric', minute: '2-digit', hour12: true}),
         CurrentTime24: now.toLocaleString('en-GB', {hour: '2-digit', minute: '2-digit', hour12: false})
     };
@@ -269,6 +270,7 @@ function previewSMSTemplate(idx) {
         var regex = new RegExp('{{\\.' + key + '}}', 'g');
         text = text.replace(regex, sampleData[key]);
     }
+    text = resolveCurrentDateShortOffsets(text);
     
     // Display the preview in the div
     var previewDiv = $("#preview_sms_content");

@@ -8,15 +8,16 @@ import (
 
 // SMSTemplateContext is the context that is sent to any SMS template.
 type SMSTemplateContext struct {
-	From            string
-	URL             string
-	TrackingURL     string
-	RId             string
-	BaseURL         string
-	CurrentDateTime string // Current date and time - e.g. "Nov 23, 2025 7:39 PM"
-	CurrentDate     string // Current date only - e.g. "November 23, 2025"
-	CurrentTime     string // Current time (12-hour) - e.g. "7:39 PM"
-	CurrentTime24   string // Current time (24-hour) - e.g. "19:39"
+	From             string
+	URL              string
+	TrackingURL      string
+	RId              string
+	BaseURL          string
+	CurrentDateTime  string // Current date and time - e.g. "Nov 23, 2025 7:39 PM"
+	CurrentDate      string // Current date only - e.g. "November 23, 2025"
+	CurrentDateShort string // Current date only (DD.MM.YYYY) - e.g. "23.11.2025"
+	CurrentTime      string // Current time (12-hour) - e.g. "7:39 PM"
+	CurrentTime24    string // Current time (24-hour) - e.g. "19:39"
 	BaseRecipient
 }
 
@@ -67,15 +68,16 @@ func NewSMSTemplateContext(ctx TemplateContext, r BaseRecipient, rid string) (SM
 	now := time.Now()
 
 	return SMSTemplateContext{
-		BaseRecipient:   r,
-		BaseURL:         baseURL.String(),
-		URL:             phishURL.String(),
-		TrackingURL:     trackingURL.String(),
-		From:            from,
-		RId:             rid,
-		CurrentDateTime: now.Format("Jan 2, 2006 3:04 PM"),
-		CurrentDate:     now.Format("January 2, 2006"),
-		CurrentTime:     now.Format("3:04 PM"),
-		CurrentTime24:   now.Format("15:04"),
+		BaseRecipient:    r,
+		BaseURL:          baseURL.String(),
+		URL:              phishURL.String(),
+		TrackingURL:      trackingURL.String(),
+		From:             from,
+		RId:              rid,
+		CurrentDateTime:  now.Format("Jan 2, 2006 3:04 PM"),
+		CurrentDate:      now.Format("January 2, 2006"),
+		CurrentDateShort: now.Format("02.01.2006"),
+		CurrentTime:      now.Format("3:04 PM"),
+		CurrentTime24:    now.Format("15:04"),
 	}, nil
 }

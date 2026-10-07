@@ -139,7 +139,7 @@ func (s *SMSLog) Generate() (string, error) {
 	}
 
 	// Parse the SMS template
-	tmpl, err := template.New("sms_template").Parse(campaign.SMSTemplate.Text)
+	tmpl, err := template.New("sms_template").Parse(resolveCurrentDateShortOffsets(campaign.SMSTemplate.Text))
 	if err != nil {
 		return "", err
 	}

@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"time"
 
 	check "gopkg.in/check.v1"
 )
@@ -54,6 +55,7 @@ func (s *ModelsSuite) TestNewTemplateContext(c *check.C) {
 	// Check that dynamic date/time fields are populated (not empty)
 	c.Assert(got.CurrentDateTime, check.Not(check.Equals), "")
 	c.Assert(got.CurrentDate, check.Not(check.Equals), "")
+	c.Assert(got.CurrentDateShort, check.Matches, `^\d{2}\.\d{2}\.\d{4}$`)
 	c.Assert(got.CurrentTime, check.Not(check.Equals), "")
 	c.Assert(got.CurrentTime24, check.Not(check.Equals), "")
 }
@@ -81,4 +83,16 @@ func (s *ModelsSuite) TestTemplateExecutionWithPhone(c *check.C) {
 	result, err := ExecuteTemplate(template, ptx)
 	c.Assert(err, check.Equals, nil)
 	c.Assert(result, check.Equals, expected)
+}
+
+func (s *ModelsSuite) TestCurrentDateShortOffsets(c *check.C) {
+	// {{.CurrentDateShort+N}} and {{.CurrentDateShort - N}} resolve to today ± N days
+	plus, err := ExecuteTemplate("{{.CurrentDateShort+7}}", nil)
+	c.Assert(err, check.Equals, nil)
+	c.Assert(plus, check.Matches, `^\d{2}\.\d{2}\.\d{4}$`)
+	c.Assert(plus, check.Equals, time.Now().AddDate(0, 0, 7).Format("02.01.2006"))
+
+	minus, err := ExecuteTemplate("{{.CurrentDateShort - 3}}", nil)
+	c.Assert(err, check.Equals, nil)
+	c.Assert(minus, check.Equals, time.Now().AddDate(0, 0, -3).Format("02.01.2006"))
 }

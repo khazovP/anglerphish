@@ -32,6 +32,7 @@ func (s *ModelsSuite) TestNewSMSTemplateContext(c *check.C) {
 	// Check that dynamic date/time fields are populated (not empty)
 	c.Assert(got.CurrentDateTime, check.Not(check.Equals), "")
 	c.Assert(got.CurrentDate, check.Not(check.Equals), "")
+	c.Assert(got.CurrentDateShort, check.Matches, `^\d{2}\.\d{2}\.\d{4}$`)
 	c.Assert(got.CurrentTime, check.Not(check.Equals), "")
 	c.Assert(got.CurrentTime24, check.Not(check.Equals), "")
 }
